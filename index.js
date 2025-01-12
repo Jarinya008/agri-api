@@ -1,0 +1,128 @@
+const express = require('express');
+const mysql = require('mysql2');
+
+const app = express();
+const port = 3001;
+
+app.use(express.json());
+
+const connection = mysql.createConnection({
+    host: '202.28.34.197',
+    user: 'web66_65011212021',       // Replace with your MySQL username
+    password: '65011212021@csmsu', // Replace with your MySQL password
+    database: 'web66_65011212021' // Replace with your MySQL database name
+})
+
+connection.connect((err) => {
+    if (err){
+        console.error("Error connect mysql",err);
+        return;
+    }console.log("connected to mysql successfuly");
+    
+})
+
+app.get('/', (req,res) => {
+    res.json({message: 'helloooo sawatdee'});
+});
+
+app.post('/register', (req, res) => {
+    const { username, email, password, phone, image, contact, address, lat, lng, mtype } = req.body;
+
+    if (!username || !email || !password) {
+        return res.status(400).json({ message: "Username, email, and password are required" });
+    }
+
+    // ตรวจสอบว่ามี username และ email ซ้ำกับ mtype เดียวกันหรือไม่
+    const checkQuery = `
+        SELECT * FROM members 
+        WHERE (username = ? OR email = ?) AND mtype = ?
+    `;
+
+    connection.query(checkQuery, [username, email, mtype], (err, result) => {
+        if (err) {
+            console.error("Error checking existing user:", err);
+            return res.status(500).json({ message: "Failed to check user" });
+        }
+
+        // หากพบว่า username และ email ซ้ำกับ mtype เดียวกัน
+        if (result.length > 0) {
+            return res.status(400).json({
+                message: "Username and email already exist for this mtype. Cannot register duplicate account.",
+            });
+        }
+
+        // ตรวจสอบว่ามี email ซ้ำใน mtype อื่นหรือไม่
+        const checkOtherTypeQuery = `
+            SELECT * FROM members 
+            WHERE email = ? AND mtype != ?
+        `;
+
+        connection.query(checkOtherTypeQuery, [email, mtype], (err, result) => {
+            if (err) {
+                console.error("Error checking other mtypes:", err);
+                return res.status(500).json({ message: "Failed to check other mtypes" });
+            }
+
+            // หากพบว่า email ถูกใช้ไปแล้วในอีก mtype
+            if (result.length > 0 && result.length >= 2) {
+                return res.status(400).json({
+                    message: "This email already has accounts with both mtypes. Cannot register more accounts with this email.",
+                });
+            }
+
+            // เพิ่มผู้ใช้ใหม่
+            const insertQuery = `
+                INSERT INTO members (username, email, password, phone, image, contact, address, lat, lng, mtype) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+
+            connection.query(insertQuery, [username, email, password, phone, image, contact, address, lat, lng, mtype], (err, result) => {
+                if (err) {
+                    console.error("Error inserting data:", err);
+                    return res.status(500).json({ message: "Failed to register user" });
+                }
+
+                res.status(201).json({
+                    message: "User registered successfully!",
+                    userId: result.insertId,
+                });
+            });
+        });
+    });
+});
+
+
+
+app.post('/login', (req, res) => {
+    const { email, phone, password } = req.body;
+
+    // ตรวจสอบว่าให้กรอกอีเมลหรือเบอร์โทร และรหัสผ่าน
+    if ((!email && !phone) || !password) {
+        return res.status(400).json({ message: "Email or phone and password are required" });
+    }
+
+    // SQL Query เพื่อค้นหาผู้ใช้โดยใช้ email หรือ phone และ password
+    const query = `SELECT * FROM members WHERE (email = ? OR phone = ?) AND password = ?`;
+
+    connection.query(query, [email, phone, password], (err, result) => {
+        if (err) {
+            console.error("Error checking login:", err);
+            return res.status(500).json({ message: "Failed to login" });
+        }
+
+        // หากไม่พบผู้ใช้
+        if (result.length === 0) {
+            return res.status(400).json({ message: "Invalid email/phone or password", rowCount: 0 });
+        }
+
+        // ส่งจำนวนแถว (rowCount) และข้อมูลผู้ใช้ (users)
+        res.status(200).json({ message: "Login successful", rowCount: result.length, users: result });
+    });
+});
+
+
+
+
+app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+});
