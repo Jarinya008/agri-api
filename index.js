@@ -24,8 +24,28 @@ connection.connect((err) => {
     
 })
 
-app.get('/', (req,res) => {
-    res.json({message: 'helloooo sawatdee'});
+app.get('/members', (req, res) => {
+    // SQL Query เพื่อค้นหาข้อมูลสมาชิกทั้งหมด
+    const query = `SELECT * FROM members`;
+
+    connection.query(query, (err, result) => {
+        if (err) {
+            console.error("Error fetching members:", err);
+            return res.status(500).json({ message: "Failed to fetch members" });
+        }
+
+        // หากไม่พบข้อมูลในตาราง
+        if (result.length === 0) {
+            return res.status(404).json({ message: "No members found", rowCount: 0 });
+        }
+
+        // ส่งข้อมูลสมาชิกกลับไป
+        res.status(200).json({ 
+            message: "Members fetched successfully", 
+            rowCount: result.length, 
+            users: result 
+        });
+    });
 });
 
 app.post('/register', (req, res) => {
