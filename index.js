@@ -117,17 +117,17 @@ app.post('/register', (req, res) => {
 
 
 app.post('/login', (req, res) => {
-    const { email, phone, password } = req.body;
+    const { email, username, password } = req.body;
 
     // ตรวจสอบว่าให้กรอกอีเมลหรือเบอร์โทร และรหัสผ่าน
-    if ((!email && !phone) || !password) {
-        return res.status(400).json({ message: "Email or phone and password are required" });
+    if ((!email && !username) || !password) {
+        return res.status(400).json({ message: "Email or username and password are required" });
     }
 
     // SQL Query เพื่อค้นหาผู้ใช้โดยใช้ email หรือ phone และ password
-    const query = `SELECT * FROM members WHERE (email = ? OR phone = ?) AND password = ?`;
+    const query = `SELECT * FROM members WHERE (email = ? OR username = ?) AND password = ?`;
 
-    connection.query(query, [email, phone, password], (err, result) => {
+    connection.query(query, [email, username, password], (err, result) => {
         if (err) {
             console.error("Error checking login:", err);
             return res.status(500).json({ message: "Failed to login" });
