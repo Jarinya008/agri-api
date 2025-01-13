@@ -116,6 +116,34 @@ app.post('/register', (req, res) => {
 
 
 
+// app.post('/login', (req, res) => {
+//     const { email, username, password } = req.body;
+
+//     // ตรวจสอบว่าให้กรอกอีเมลหรือเบอร์โทร และรหัสผ่าน
+//     if ((!email && !username) || !password) {
+//         return res.status(400).json({ message: "Email or username and password are required" });
+//     }
+
+//     // SQL Query เพื่อค้นหาผู้ใช้โดยใช้ email หรือ phone และ password
+//     const query = `SELECT * FROM members WHERE (email = ? OR username = ?) AND password = ?`;
+
+//     connection.query(query, [email, username, password], (err, result) => {
+//         if (err) {
+//             console.error("Error checking login:", err);
+//             return res.status(500).json({ message: "Failed to login" });
+//         }
+
+//         // หากไม่พบผู้ใช้
+//         if (result.length === 0) {
+//             return res.status(400).json({ message: "Invalid email/phone or password", rowCount: 0 });
+//         }
+
+//         // ส่งจำนวนแถว (rowCount) และข้อมูลผู้ใช้ (users)
+//         res.status(200).json({ message: "Login successful", rowCount: result.length, users: result });
+//     });
+// });
+
+
 app.post('/login', (req, res) => {
     const { email, username, password } = req.body;
 
