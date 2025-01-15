@@ -27,6 +27,72 @@ module.exports = (connection) => {
         });
     });
     
+    // router.post('/register', (req, res) => {
+    //     const { username, email, password, phone, image, contact, address, lat, lng, mtype } = req.body;
+    
+    //     if (!username || !email || !password) {
+    //         return res.status(400).json({ message: "Username, email, and password are required" });
+    //     }
+    
+    //     // ตรวจสอบว่ามี username และ email ซ้ำกับ mtype เดียวกันหรือไม่
+    //     const checkQuery = `
+    //         SELECT * FROM members 
+    //         WHERE (username = ? OR email = ?) AND mtype = ?
+    //     `;
+    
+    //     connection.query(checkQuery, [username, email, mtype], (err, result) => {
+    //         if (err) {
+    //             console.error("Error checking existing user:", err);
+    //             return res.status(500).json({ message: "Failed to check user" });
+    //         }
+    
+    //         // หากพบว่า username และ email ซ้ำกับ mtype เดียวกัน
+    //         if (result.length > 0) {
+    //             return res.status(400).json({
+    //                 message: "Username and email already exist for this mtype. Cannot register duplicate account.",
+    //             });
+    //         }
+    
+    //         // ตรวจสอบว่ามี email ซ้ำใน mtype อื่นหรือไม่
+    //         const checkOtherTypeQuery = `
+    //             SELECT * FROM members 
+    //             WHERE email = ? AND mtype != ?
+    //         `;
+    
+    //         connection.query(checkOtherTypeQuery, [email, mtype], (err, result) => {
+    //             if (err) {
+    //                 console.error("Error checking other mtypes:", err);
+    //                 return res.status(500).json({ message: "Failed to check other mtypes" });
+    //             }
+    
+    //             // หากพบว่า email ถูกใช้ไปแล้วในอีก mtype
+    //             if (result.length > 0 && result.length >= 2) {
+    //                 return res.status(400).json({
+    //                     message: "This email already has accounts with both mtypes. Cannot register more accounts with this email.",
+    //                 });
+    //             }
+    
+    //             // เพิ่มผู้ใช้ใหม่
+    //             const insertQuery = `
+    //                 INSERT INTO members (username, email, password, phone, image, contact, address, lat, lng, mtype) 
+    //                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    //             `;
+    
+    //             connection.query(insertQuery, [username, email, password, phone, image, contact, address, lat, lng, mtype], (err, result) => {
+    //                 if (err) {
+    //                     console.error("Error inserting data:", err);
+    //                     return res.status(500).json({ message: "Failed to register user" });
+    //                 }
+    
+    //                 res.status(201).json({
+    //                     message: "User registered successfully!",
+    //                     userId: result.insertId,
+    //                 });
+    //             });
+    //         });
+    //     });
+    // });
+
     router.post('/register', (req, res) => {
         const { username, email, password, phone, image, contact, address, lat, lng, mtype } = req.body;
     
@@ -34,64 +100,85 @@ module.exports = (connection) => {
             return res.status(400).json({ message: "Username, email, and password are required" });
         }
     
-        // ตรวจสอบว่ามี username และ email ซ้ำกับ mtype เดียวกันหรือไม่
-        const checkQuery = `
+        // ตรวจสอบว่า username ซ้ำกันหรือไม่
+        const checkUsernameQuery = `
             SELECT * FROM members 
-            WHERE (username = ? OR email = ?) AND mtype = ?
+            WHERE username = ?
         `;
-    
-        connection.query(checkQuery, [username, email, mtype], (err, result) => {
+        
+        connection.query(checkUsernameQuery, [username], (err, result) => {
             if (err) {
-                console.error("Error checking existing user:", err);
-                return res.status(500).json({ message: "Failed to check user" });
+                console.error("Error checking existing username:", err);
+                return res.status(500).json({ message: "Failed to check username" });
             }
     
-            // หากพบว่า username และ email ซ้ำกับ mtype เดียวกัน
+            // หากพบว่า username ซ้ำ
             if (result.length > 0) {
                 return res.status(400).json({
-                    message: "Username and email already exist for this mtype. Cannot register duplicate account.",
+                    message: "Username already exists. Cannot register duplicate account.",
                 });
             }
     
-            // ตรวจสอบว่ามี email ซ้ำใน mtype อื่นหรือไม่
-            const checkOtherTypeQuery = `
+            // ตรวจสอบว่า email ซ้ำกับ mtype เดียวกันหรือไม่
+            const checkQuery = `
                 SELECT * FROM members 
-                WHERE email = ? AND mtype != ?
+                WHERE (email = ?) AND mtype = ?
             `;
     
-            connection.query(checkOtherTypeQuery, [email, mtype], (err, result) => {
+            connection.query(checkQuery, [email, mtype], (err, result) => {
                 if (err) {
-                    console.error("Error checking other mtypes:", err);
-                    return res.status(500).json({ message: "Failed to check other mtypes" });
+                    console.error("Error checking existing email and mtype:", err);
+                    return res.status(500).json({ message: "Failed to check user" });
                 }
     
-                // หากพบว่า email ถูกใช้ไปแล้วในอีก mtype
-                if (result.length > 0 && result.length >= 2) {
+                // หากพบว่า email ซ้ำกับ mtype เดียวกัน
+                if (result.length > 0) {
                     return res.status(400).json({
-                        message: "This email already has accounts with both mtypes. Cannot register more accounts with this email.",
+                        message: "Email already exists for this mtype. Cannot register duplicate account.",
                     });
                 }
     
-                // เพิ่มผู้ใช้ใหม่
-                const insertQuery = `
-                    INSERT INTO members (username, email, password, phone, image, contact, address, lat, lng, mtype) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                // ตรวจสอบว่ามี email ซ้ำใน mtype อื่นหรือไม่
+                const checkOtherTypeQuery = `
+                    SELECT * FROM members 
+                    WHERE email = ? AND mtype != ?
                 `;
-    
-                connection.query(insertQuery, [username, email, password, phone, image, contact, address, lat, lng, mtype], (err, result) => {
+        
+                connection.query(checkOtherTypeQuery, [email, mtype], (err, result) => {
                     if (err) {
-                        console.error("Error inserting data:", err);
-                        return res.status(500).json({ message: "Failed to register user" });
+                        console.error("Error checking other mtypes:", err);
+                        return res.status(500).json({ message: "Failed to check other mtypes" });
                     }
     
-                    res.status(201).json({
-                        message: "User registered successfully!",
-                        userId: result.insertId,
+                    // หากพบว่า email ถูกใช้ไปแล้วในอีก mtype
+                    if (result.length >= 2) {
+                        return res.status(400).json({
+                            message: "This email already has accounts with both mtypes. Cannot register more accounts with this email.",
+                        });
+                    }
+    
+                    // เพิ่มผู้ใช้ใหม่
+                    const insertQuery = `
+                        INSERT INTO members (username, email, password, phone, image, contact, address, lat, lng, mtype) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    `;
+        
+                    connection.query(insertQuery, [username, email, password, phone, image, contact, address, lat, lng, mtype], (err, result) => {
+                        if (err) {
+                            console.error("Error inserting data:", err);
+                            return res.status(500).json({ message: "Failed to register user" });
+                        }
+        
+                        res.status(201).json({
+                            message: "User registered successfully!",
+                            userId: result.insertId,
+                        });
                     });
                 });
             });
         });
     });
+    
     
     
     router.post('/login', (req, res) => {

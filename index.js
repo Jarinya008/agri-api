@@ -25,15 +25,15 @@ connection.connect((err) => {
     console.log("Connected to MySQL successfully");
 });
 
-// Import เส้น API จาก routes/general.js
+// Import เส้น API
 const generalRoutes = require('./routes/general')(connection);
-app.use('/members', generalRoutes);
-app.use('/register', generalRoutes);
-app.use('/login', generalRoutes);
-const clieatRoutes = require('./routes/general')(connection);
-app.use('/', clieatRoutes);
-const contractorRoutes = require('./routes/general')(connection);
-app.use('/', contractorRoutes);
+const clientRoutes = require('./routes/client')(connection);
+const contractorRoutes = require('./routes/contractor')(connection);
+
+// ใช้เส้นทาง
+app.use('/general', generalRoutes); 
+app.use('/client', clientRoutes);    
+app.use('/contractor', contractorRoutes); 
 
 // เริ่มต้นเซิร์ฟเวอร์
 app.listen(port, () => {
